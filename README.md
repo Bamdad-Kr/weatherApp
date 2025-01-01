@@ -1,7 +1,5 @@
 # Weather Web App
 
-## Overview
-
 The Basic Weather Web App is a simple web application that allows users to check the current weather conditions for any city around the world. It utilizes a weather API to fetch real-time weather data and presents it in a user-friendly interface.
 
 ## Features
