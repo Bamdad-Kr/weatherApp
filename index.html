@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پیش‌بینی آب و هوا</title>
+    <style>
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/iran-sans-font@v1.0.0/dist/IRANSansWeb.woff2');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'IRANSans', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(195deg, #14213d, #e1dfe5);
+            min-height: 100vh;
+            padding: 2rem;
+            color: white;
+        }
+
+        .app {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 2rem;
+        }
+
+        .search {
+            display: flex;
+            margin-bottom: 2rem;
+        }
+
+        .search select {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+        background: rgba(255, 255, 260 0.2);
+            color: white;
+            border-radius: 12px;
+            outline: none;
+        }
+
+        .current {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .temp {
+            font-size: 5rem;
+            font-weight: 500;
+        }
+
+        .date {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+
+        .weather-desc {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .forecast {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+        }
+
+        .day {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .day-name {
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .forecast-temp {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        .cloud-icon {
+            width: 100px;
+            height: 100px;
+            fill: white;
+            stroke: rgba(255,255,255,0.3);
+            stroke-width: 1;
+        }
+
+        @media (max-width: 768px) {
+            .forecast {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .current {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+            .forecast {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="search">
+            <select id="citySelect">
+                <option value="Tehran">تهران</option>
+                <option value="Mashhad">مشهد</option>
+                <option value="Isfahan">اصفهان</option>
+                <option value="Shiraz">شیراز</option>
+                <option value="Tabriz">تبریز</option>
+            </select>
+        </div>
+
+        <div class="current">
+            <div>
+                <div class="temp" id="currentTemp">--°</div>
+                <div class="date" id="currentDate">--</div>
+                <div class="weather-desc" id="weatherDesc">--</div>
+            </div>
+            <img class="cloud-icon" id="weatherIcon" src="" alt="آیکون آب و هوا">
+        </div>
+
+        <div class="forecast" id="forecast">
+            <div class="forecast" id="forecast">
+                <!--به جاش از جی اس استفاده کردم-->
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const API_KEY = 'aea31ac33639a53c8198cde54d09b601';
+
+async function fetchCities() {
+    try {
+        const response = await fetch('https://iran-cities-api.ir/api/cities');
+        const cities = await response.json();
+
+        const citySelect = document.getElementById('citySelect');
+        citySelect.innerHTML = '';
+        cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.name;
+            option.textContent = city.name;
+            citySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('خطا در دریافت لیست شهرها:', error);
+
+        // لیست پیش‌فرض در صورت خطا
+        const defaultCities = [
+            'تهران', 'مشهد', 'اصفهان',
+            'شیراز', 'تبریز', 'کرج',
+            'اهواز', 'قم', 'کرمانشاه'
+        ];
+
+        const citySelect = document.getElementById('citySelect');
+        defaultCities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city;
+            option.textContent = city;
+            citySelect.appendChild(option);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchCities);
+
+    async function getWeatherData(city) {
+        try {
+            const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric&lang=fa`);
+            const data = await response.json();
+
+            document.getElementById('currentTemp').textContent = `${Math.round(data.main.temp)}°`;
+            document.getElementById('weatherDesc').textContent = data.weather[0].description;
+            document.getElementById('weatherIcon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+
+            const forecastResponse = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric&lang=fa`);
+            const forecastData = await forecastResponse.json();
+
+            updateForecast(forecastData);
+        } catch (error) {
+            console.error('خطا در دریافت اطلاعات:', error);
+        }
+    }
+
+
+    function updateForecast(forecastData) {
+        const forecastContainer = document.getElementById('forecast');
+        forecastContainer.innerHTML = '';
+
+        const dailyData = forecastData.list.filter((reading, index) =>
+            index % 8 === 0
+        );
+
+        dailyData.slice(0, 6).forEach(day => {
+            const dayElement = document.createElement('div');
+            dayElement.classList.add('day');
+
+            const date = new Date(day.dt * 1000);
+            const dayName = date.toLocaleDateString('fa-IR', { weekday: 'long' });
+
+            dayElement.innerHTML = `
+                <div class="day-name">${dayName}</div>
+                <img class="cloud-icon" src="https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png" alt="icon">
+                <div class="forecast-temp">${Math.round(day.main.temp)}°</div>
+            `;
+
+            forecastContainer.appendChild(dayElement);
+        });
+    }
+
+    document.getElementById('citySelect').addEventListener('change', (e) => {
+        getWeatherData(e.target.value);
+    });
+
+    getWeatherData('Tehran');
+
+    function updateDate() {
+        const currentDate = new Date();
+        document.getElementById('currentDate').textContent =
+            currentDate.toLocaleDateString('fa-IR', {
+                day: 'numeric',
+                month: 'long'
+            });
+    }
+    updateDate();
+    </script>
+</body>
+</html>
